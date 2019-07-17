@@ -47,6 +47,7 @@ function fetchCityData(event) {
     data: { data: searchQuery }
   })
     .then(location => {
+      console.log(location);
       displayMap(location);
       getResource('weather', location);
       getResource('movies', location);
