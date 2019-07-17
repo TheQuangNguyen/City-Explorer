@@ -73,7 +73,7 @@ function getMovies(req, res) {
 }
 
 function getYelp(req, res) { 
-  const darkskyUrl =  `https://api.yelp.com/v3/businesses/search?`;
+  const darkskyUrl =  `https://api.yelp.com/v3/businesses/search?location`;
 }
 
 function getHiking(req, res) { 
