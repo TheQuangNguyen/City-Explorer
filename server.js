@@ -73,7 +73,7 @@ function getMovies(req, res) {
 }
 
 function getYelp(req, res) { 
-  const darkskyUrl =  `https://api.yelp.com/v3/businesses/search?search?term=restaurants&latitude=47.6062095&longitude=-122.3320708`;
+  const darkskyUrl =  `https://api.yelp.com/v3/businesses/search?search?term=restaurants&latitude=${req.query.data.latitude}&longitude=${req.query.data.longitude}`;
 }
 
 function getHiking(req, res) { 
