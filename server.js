@@ -9,7 +9,7 @@ const superagent = require('superagent');
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
-app.use(express.static('public'));
+// app.use(express.static('public'));
 
 function Location(query, res) { 
   this.search_query = query;
@@ -73,7 +73,7 @@ function getMovies(req, res) {
 }
 
 function getYelp(req, res) { 
-  const darkskyUrl =  `https://api.yelp.com/v3/businesses/search?location`;
+  const darkskyUrl =  `https://api.yelp.com/v3/businesses/search?search?term=restaurants&latitude=47.6062095&longitude=-122.3320708`;
 }
 
 function getHiking(req, res) { 
