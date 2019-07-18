@@ -13,7 +13,11 @@ app.use(cors());
 app.use(express.static('front-end'));
 
 const client = new pg.Client(process.env.DATABASE_URL);
+client.connect();
+client.on('err', err => console.log(err));
 
+
+//////////////////// Location Stuff Is Below ////////////////////////////
 
 function Location(query, res) { 
   this.search_query = query;
@@ -21,6 +25,57 @@ function Location(query, res) {
   this.latitude = res.results[0].geometry.location.lat;
   this.longitude = res.results[0].geometry.location.lng
 }
+
+Location.fetchLocation = (req, res) => { 
+  console.log('got data from API');
+  const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${req.query.data}&key=${process.env.GEOCODE_API_KEY}`;
+  let location;
+  return superagent.get(geocodeUrl)
+    .then(data => { 
+      location = new Location(req.query.data, JSON.parse(data.text));
+      console.log(location)
+      location.save()
+        .then(result => {
+          location.id = result.rows[0].id;
+          return location;
+        })
+      res.send(location);
+    })
+    .catch(err => { 
+      errHandler(err, res);
+    })
+}
+
+Location.prototype.save = function() { 
+  const SQL = `
+    INSERT INTO locations 
+      (search_query,formatted_query,latitude,longitude)
+      VALUES($1,$2,$3,$4)
+      RETURNING id`;
+  let values = Object.values(this);
+  console.log('client.query return ', client.query(SQL, values));
+  return client.query(SQL, values);
+}
+
+function getLocation(req, res) { 
+
+  const SQL = `SELECT * FROM locations WHERE search_query='${req.query.data}'`;
+
+  return client.query(SQL)
+    .then( result => {
+      if (result.rowCount > 0) { 
+        console.log('this is how result look like ', result);
+        console.log('Got data from SQL');
+        res.send(result.rows[0]);
+      }
+      else { 
+        Location.fetchLocation(req, res);
+      }
+    })
+    .catch(err => console.log(err));
+}
+
+//////////////////// Location Handling is Above /////////////////////////////
 
 function Weather(day) { 
   this.forecast = day.summary;
@@ -62,23 +117,15 @@ function Trails(place) {
   this.conditions = place.conditionDetails;
   this.condition_date = place.conditionDate.split(' ')[0];
   this.condition_time = place.conditionDate.split(' ')[1];
-
 }
 
-function searchToLatLong(req, res) { 
-  const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${req.query.data}&key=${process.env.GEOCODE_API_KEY}`;
-  let location;
-  return superagent.get(geocodeUrl)
-    .then(data => { 
-      location = new Location(req.query.data, JSON.parse(data.text));
-      res.send(location);
-    })
-    .catch(err => { 
-      res.send(err);
-    })
+function errHandler(err, res) { 
+  console.error('error: ', err);
+  if (res) { res.status(500).send('Sorry, something is wrong!');}
 }
 
 function getWeather(req, res) { 
+  console.log(req.originalUrl.split('?')[0]);
   const darkskyUrl =  `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${req.query.data.latitude},${req.query.data.longitude}`;
 
   return superagent.get(darkskyUrl)
@@ -94,6 +141,7 @@ function getWeather(req, res) {
 }
 
 function getMovies(req, res) {
+  console.log(req.originalUrl.split('?')[0]);
   const moviedbUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIEDB_API_KEY}&query=${req.search_query}`;
 
   return superagent.get(moviedbUrl)
@@ -110,6 +158,7 @@ function getMovies(req, res) {
 }
 
 function getYelp(req, res) { 
+  console.log(req.originalUrl.split('?')[0]);
   const yelpUrl = `https://api.yelp.com/v3/businesses/search?term=restaurants&latitude=${req.query.data.latitude}&longitude=${req.query.data.longitude}`;
 
   return superagent.get(yelpUrl).set('AUTHORIZATION', `BEARER ${process.env.YELP_API_KEY}`)
@@ -126,6 +175,7 @@ function getYelp(req, res) {
 }
 
 function getHiking(req, res) { 
+  console.log(req.originalUrl.split('?')[0]);
   const hikingUrl = `https://www.hikingproject.com/data/get-trails?lat=${req.query.data.latitude}&lon=${req.query.data.longitude}&key=${process.env.HIKING_API_KEY}`;
 
   return superagent.get(hikingUrl)
@@ -142,6 +192,7 @@ function getHiking(req, res) {
 }
 
 function getEvents(req, res) { 
+  console.log(req.originalUrl.split('?')[0].slice(1));
   const eventbriteUrl = `https://www.eventbriteapi.com/v3/events/search?location.longitude=${req.query.data.longitude}&location.latitude=${req.query.data.latitude}&token=${process.env.EVENTBRITE_API_KEY}`;
 
   return superagent.get(eventbriteUrl)
@@ -157,9 +208,40 @@ function getEvents(req, res) {
     })
 }
 
-app.get('/location', searchToLatLong);
+
+
+function getInfo(req, res) { 
+  const source = req.originalUrl.split('?')[0].slice(1);
+  const sourceUrl = infoObject(req, source);
+
+  
+}
+
+
+
+
+
+const infoObject = function(req, source) { 
+  switch (source) {
+  case 'weather':
+    return `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${req.query.data.latitude},${req.query.data.longitude}`;
+
+  case 'movies':
+    return `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIEDB_API_KEY}&query=${req.search_query}`;
+
+  case 'yelp': 
+    return `https://api.yelp.com/v3/businesses/search?term=restaurants&latitude=${req.query.data.latitude}&longitude=${req.query.data.longitude}`;
+
+  case 'trails': 
+    return `https://www.hikingproject.com/data/get-trails?lat=${req.query.data.latitude}&lon=${req.query.data.longitude}&key=${process.env.HIKING_API_KEY}`;
+
+  case 'events': 
+    return `https://www.eventbriteapi.com/v3/events/search?location.longitude=${req.query.data.longitude}&location.latitude=${req.query.data.latitude}&token=${process.env.EVENTBRITE_API_KEY}`;
+}
+
+app.get('/location', getLocation);
 app.get('/weather', getWeather);
-app.get('/movies', getMovies);
+app.get('/movies', getInfo);
 app.get('/yelp', getYelp);
 app.get('/trails', getHiking);
 app.get('/events', getEvents);
