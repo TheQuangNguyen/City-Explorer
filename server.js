@@ -10,7 +10,7 @@ const pg = require('pg');
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
-// app.use(express.static('front-end'));
+app.use(express.static('front-end'));
 
 const client = new pg.Client(process.env.DATABASE_URL);
 client.connect();
@@ -53,14 +53,14 @@ Location.prototype.save = function() {
     INSERT INTO locations 
       (search_query,formatted_query,latitude,longitude)
       VALUES($1,$2,$3,$4)
-      RETURNING id`;
+      RETURNING id;`;
   let values = Object.values(this);
   return client.query(SQL, values);
 }
 
 function getLocation(req, res) {
 
-  const SQL = `SELECT * FROM locations WHERE search_query='${req.query.data}'`;
+  const SQL = `SELECT * FROM locations WHERE search_query='${req.query.data}';`;
 
   return client.query(SQL)
     .then( result => {
@@ -83,6 +83,7 @@ function getLocation(req, res) {
 function Weather(day) {
   this.forecast = day.summary;
   this.time = new Date(day.time * 1000).toDateString();
+  this.created_time = new Date().getTime();
 }
 
 function Event(place) {
@@ -90,6 +91,7 @@ function Event(place) {
   this.name = place.name.text;
   this.event_date = new Date(place.start.local).toDateString();
   this.summary = place.summary;
+  this.created_time = new Date().getTime();
 }
 
 function Movie(film) {
@@ -100,6 +102,7 @@ function Movie(film) {
   this.image_url = `https://image.tmdb.org/t/p/w500${film.poster_path}`;
   this.popularity = film.popularity;
   this.released_on = film.release_date;
+  this.created_time = new Date().getTime();
 }
 
 function Restaurant(place) {
@@ -108,6 +111,7 @@ function Restaurant(place) {
   this.price = place.price;
   this.rating = place.rating;
   this.url = place.url;
+  this.created_time = new Date().getTime();
 }
 
 function Trails(place) {
@@ -120,6 +124,7 @@ function Trails(place) {
   this.conditions = place.conditionDetails;
   this.condition_date = place.conditionDate.split(' ')[0];
   this.condition_time = place.conditionDate.split(' ')[1];
+  this.created_time = new Date().getTime();
 }
 
 //////////////////////////Constructor Function Above /////////////////////////////////
@@ -131,7 +136,7 @@ function Trails(place) {
 function getInfo(req, res) {
   const source = req.originalUrl.split('?')[0].slice(1);
 
-  const SQL = `SELECT * FROM ${source} WHERE location_id=${req.query.data.id}`;
+  const SQL = `SELECT * FROM ${source} WHERE location_id=${req.query.data.id};`;
   // console.log('SQL ', SQL);
 
   return client.query(SQL)
@@ -139,7 +144,8 @@ function getInfo(req, res) {
       if (result.rowCount > 0) {
         console.log('Got data from SQL');
         // console.log(result.rows);
-        res.send(result.rows);
+        // res.send(result.rows);
+        cacheInvalidation(result, source, req, res);
       }
       else {
         fetchInfo(req, res, source);
@@ -150,7 +156,6 @@ function getInfo(req, res) {
 
 function fetchInfo(req, res, source) {
   const sourceUrl = getUrl(req, source);
-  console.log(sourceUrl);
 
   return superagent.get(sourceUrl).set('Authorization', `Bearer ${authorizationHeader(source)}`)
     .then(data => {
@@ -171,7 +176,7 @@ function save(object, id, source) {
   const SQL = `
     INSERT INTO ${source} 
       (${keys.join(',')},location_id)
-      VALUES(${VALUES},$${keys.length+1})`;   // 
+      VALUES(${VALUES},$${keys.length+1});`;   
   let values = Object.values(object);
   values.push(id);
   // console.log('values', values);
@@ -246,6 +251,32 @@ function authorizationHeader(source) {
   } else if (source === 'events') { 
     return `${process.env.EVENTBRITE_API_KEY}`;
   }
+}
+
+function cacheInvalidation(result, source, req, res) { 
+  console.log('source is ', source);
+  if (source === 'weather' || source === 'movies' || source === 'events') {
+    const expiredTimeDay = 10000;
+    if ((new Date().getTime() - expiredTimeDay) > result.rows[0].created_time) { 
+      deleteInvalidData(source, req);
+      fetchInfo(req, res, source);
+    } else { 
+      res.send(result.rows);
+    }
+  } else if (source === 'yelp' || source === 'trails') {
+    const expiredTimeWeek = 60000;
+    if ((new Date().getTime() - expiredTimeWeek) > result.rows[0].created_time) { 
+      deleteInvalidData(source, req);
+      fetchInfo(req, res, source);
+    } else { 
+      res.send(result.rows);
+    }
+  } 
+}
+
+function deleteInvalidData(source, req) { 
+  const SQL = `DELETE FROM ${source} WHERE location_id=${req.query.data.id};`
+  client.query(SQL);
 }
 
 /////////////////////////////////// Other API above ///////////////////////////////////
