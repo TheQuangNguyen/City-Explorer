@@ -17,6 +17,7 @@ CREATE TABLE weather (
   id SERIAL PRIMARY KEY,
   forecast VARCHAR(255),
   "time" VARCHAR(255), 
+  created_time VARCHAR(255),
   location_id INTEGER NOT NULL,
   FOREIGN KEY (location_id) REFERENCES locations (id)
 );
@@ -30,6 +31,7 @@ CREATE TABLE movies (
   image_url TEXT,
   popularity NUMERIC(6, 3),
   released_on VARCHAR(255),
+  created_time VARCHAR(255),
   location_id INTEGER NOT NULL,
   FOREIGN KEY (location_id) REFERENCES locations (id)
 );
@@ -40,6 +42,7 @@ CREATE TABLE events (
   "name" VARCHAR(255), 
   event_date VARCHAR(255),
   summary VARCHAR(255),
+  created_time VARCHAR(255),
   location_id INTEGER NOT NULL,
   FOREIGN KEY (location_id) REFERENCES locations (id)
 );
@@ -51,6 +54,7 @@ CREATE TABLE yelp (
   price VARCHAR(255),
   rating NUMERIC(3,2),
   "url" VARCHAR(255),
+  created_time VARCHAR(255),
   location_id INTEGER NOT NULL,
   FOREIGN KEY (location_id) REFERENCES locations (id)
 );
@@ -66,6 +70,7 @@ CREATE TABLE trails (
   conditions VARCHAR(255),
   condition_date VARCHAR(255),
   condition_time VARCHAR(255),
+  created_time VARCHAR(255),
   location_id INTEGER NOT NULL,
   FOREIGN KEY (location_id) REFERENCES locations (id)
 );
