@@ -78,6 +78,8 @@ function getLocation(req, res) {
 
 //////////////////// Location Handling is Above /////////////////////////////
 
+///////////////////// Constructor Functions Below //////////////////////////// 
+
 function Weather(day) {
   this.forecast = day.summary;
   this.time = new Date(day.time * 1000).toDateString();
@@ -120,97 +122,10 @@ function Trails(place) {
   this.condition_time = place.conditionDate.split(' ')[1];
 }
 
-// function errHandler(err, res) {
-//   console.error('error: ', err);
-//   if (res) { res.status(500).send('Sorry, something is wrong!');}
-// }
-
-// function getWeather(req, res) {
-//   console.log(req.originalUrl.split('?')[0]);
-//   const darkskyUrl =  `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${req.query.data.latitude},${req.query.data.longitude}`;
-
-//   return superagent.get(darkskyUrl)
-//     .then(data => {
-//       const weatherEntries = data.body.daily.data.map(day => {
-//         return new Weather(day)
-//       })
-//       res.send(weatherEntries);
-//     })
-//     .catch(err => {
-//       res.send(err);
-//     })
-// }
-
-// function getMovies(req, res) {
-//   console.log(req.originalUrl.split('?')[0]);
-//   const moviedbUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIEDB_API_KEY}&query=${req.search_query}`;
-
-//   return superagent.get(moviedbUrl)
-//     .then(data => {
-//       const movies = [];
-//       for (let i = 0; i < 20; i++) {
-//         movies.push(new Movie(data.body.results[i]));
-//       }
-//       res.send(movies);
-//     })
-//     .catch(err => {
-//       res.send(err);
-//     })
-// }
-
-// function getYelp(req, res) {
-//   console.log(req.originalUrl.split('?')[0]);
-//   const yelpUrl = `https://api.yelp.com/v3/businesses/search?term=restaurants&latitude=${req.query.data.latitude}&longitude=${req.query.data.longitude}`;
-
-//   return superagent.get(yelpUrl).set('AUTHORIZATION', `BEARER ${process.env.YELP_API_KEY}`)
-//     .then(data => {
-//       const restaurants = [];
-//       for (let i = 0; i < 20; i++) {
-//         restaurants.push(new Restaurant(data.body.businesses[i]));
-//       }
-//       res.send(restaurants);
-//     })
-//     .catch(err => {
-//       res.send(err);
-//     })
-// }
-
-// function getHiking(req, res) {
-//   console.log(req.originalUrl.split('?')[0]);
-//   const hikingUrl = `https://www.hikingproject.com/data/get-trails?lat=${req.query.data.latitude}&lon=${req.query.data.longitude}&key=${process.env.HIKING_API_KEY}`;
-
-//   return superagent.get(hikingUrl)
-//     .then(data => {
-//       const hikingTrails = [];
-//       for (let i = 0; i < 10; i++) {
-//         hikingTrails.push(new Trails(data.body.trails[i]));
-//       }
-//       res.send(hikingTrails);
-//     })
-//     .catch(err => {
-//       res.send(err);
-//     })
-// }
-
-// function getEvents(req, res) {
-//   console.log(req.originalUrl.split('?')[0].slice(1));
-//   const eventbriteUrl = `https://www.eventbriteapi.com/v3/events/search?location.longitude=${req.query.data.longitude}&location.latitude=${req.query.data.latitude}&token=${process.env.EVENTBRITE_API_KEY}`;
-
-//   return superagent.get(eventbriteUrl)
-//     .then(data => {
-//       const eventsNearby = [];
-//       for (let i = 0; i < 20; i++) {
-//         eventsNearby.push(new Event(data.body.events[i]));
-//       }
-//       res.send(eventsNearby);
-//     })
-//     .catch(err => {
-//       res.send(err);
-//     })
-// }
+//////////////////////////Constructor Function Above /////////////////////////////////
 
 
-//////////////////////////////////////////////////////////////////
+////////////////////////// Other APIS below ///////////////////////////////////////////
 
 
 function getInfo(req, res) {
@@ -333,7 +248,7 @@ function authorizationHeader(source) {
   }
 }
 
-///////////////////////////////////////////////////////////////
+/////////////////////////////////// Other API above ///////////////////////////////////
 
 app.get('/location', getLocation);
 app.get('/weather', getInfo);
