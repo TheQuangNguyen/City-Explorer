@@ -10,7 +10,7 @@ const pg = require('pg');
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
-app.use(express.static('front-end'));
+// app.use(express.static('front-end'));
 
 const client = new pg.Client(process.env.DATABASE_URL);
 client.connect();
